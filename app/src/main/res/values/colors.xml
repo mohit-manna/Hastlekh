@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#1DA1F2</color>
+    <color name="colorPrimaryDark">#AAB8C2</color>
+    <color name="colorAccent">#1DA1F2</color>
+
+    <color name="colorTwitterBlue">#71C9FD</color>
+    <color name="colorHighlight">#A5D3EF</color>
+    <color name="colorPMSBlack">#14171A</color>
+    <color name="colorLightGray">#AAB8C2</color>
+    <color name="colorExtraLightGray">#E1E8ED</color>
+    <color name="colorExtraExtraLightGray">#F5F8FA</color>
+    <color name="colorWhite">#FFFFFF</color>
+    <color name="colorBlack">#000000</color>
+
+    <color name="card_bg_color_dark">#091120</color>
+    <color name="colorTransparent">#0003DAC5</color>
+    <color name="colorRed">#D50000</color>
+    <color name="colorGreen">#00C853</color>
+</resources>

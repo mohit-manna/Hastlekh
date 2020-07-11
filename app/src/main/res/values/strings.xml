@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">HandwritingCreator</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="suggestion">A</string>
+    <string name="camera_permission">This feature needs camera usage permission as we use your mobile camera to scan the presence of an infrared camera. Allow the camera usage permission and scan room from our infrared camera scanner feature.</string>
+    <string name="oK">Ok</string>
+</resources>
