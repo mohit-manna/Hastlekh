@@ -4,12 +4,12 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:keepScreenOn="true"
     tools:context=".CemeraFragment">
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:keepScreenOn="true">
+        android:layout_height="match_parent">
 
         <FrameLayout
             android:id="@+id/frame"
@@ -20,41 +20,41 @@
             <SurfaceView
                 android:id="@+id/surface"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent"
+                android:foreground="#0FEEF6F1" />
 
             <LinearLayout
-                android:layout_width="300dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
+                android:background="@drawable/scanner"
                 android:orientation="vertical">
+                <!--                <TextView-->
+                <!--                    android:id="@+id/line1"-->
+                <!--                    android:layout_width="match_parent"-->
+                <!--                    android:layout_height="5dp"-->
+                <!--                    android:background="@drawable/inner" />-->
 
-                <TextView
-                    android:id="@+id/line1"
-                    android:layout_width="match_parent"
-                    android:layout_height="5dp"
-                    android:background="@drawable/inner" />
+                <!--                <TextView-->
+                <!--                    android:id="@+id/line2"-->
+                <!--                    android:layout_width="match_parent"-->
+                <!--                    android:layout_height="5dp"-->
+                <!--                    android:layout_marginTop="10dp"-->
+                <!--                    android:background="@drawable/inner" />-->
 
-                <TextView
-                    android:id="@+id/line2"
-                    android:layout_width="match_parent"
-                    android:layout_height="5dp"
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/inner" />
+                <!--                <TextView-->
+                <!--                    android:id="@+id/line3"-->
+                <!--                    android:layout_width="match_parent"-->
+                <!--                    android:layout_height="5dp"-->
+                <!--                    android:layout_marginTop="10dp"-->
+                <!--                    android:background="@drawable/inner" />-->
 
-                <TextView
-                    android:id="@+id/line3"
-                    android:layout_width="match_parent"
-                    android:layout_height="5dp"
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/inner" />
-
-                <TextView
-                    android:id="@+id/line4"
-                    android:layout_width="match_parent"
-                    android:layout_height="5dp"
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/inner" />
-
+                <!--                <TextView-->
+                <!--                    android:id="@+id/line4"-->
+                <!--                    android:layout_width="match_parent"-->
+                <!--                    android:layout_height="5dp"-->
+                <!--                    android:layout_marginTop="10dp"-->
+                <!--                    android:background="@drawable/inner" />-->
             </LinearLayout>
 
             <LinearLayout
@@ -79,8 +79,10 @@
                     android:id="@+id/captureBtn"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="5dp"
                     android:backgroundTint="@color/colorWhite"
                     android:src="@drawable/ic_round_camera_24"
+                    app:elevation="2dp"
                     app:fabSize="auto" />
 
             </LinearLayout>

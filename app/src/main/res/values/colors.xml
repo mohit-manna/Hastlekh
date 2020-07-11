@@ -17,4 +17,5 @@
     <color name="colorTransparent">#0003DAC5</color>
     <color name="colorRed">#D50000</color>
     <color name="colorGreen">#00C853</color>
+    <color name="scanner">#FFFFFFFF</color>
 </resources>
