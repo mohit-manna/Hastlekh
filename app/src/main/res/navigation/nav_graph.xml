@@ -9,5 +9,14 @@
         android:id="@+id/cemeraFragment"
         android:name="com.incrementors.handwritingcreator.CameraFragment"
         android:label="fragment_cemera"
-        tools:layout="@layout/fragment_camera" />
+        tools:layout="@layout/fragment_camera">
+        <action
+            android:id="@+id/action_cemeraFragment_to_charactersFragment"
+            app:destination="@id/charactersFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/charactersFragment"
+        android:name="com.incrementors.handwritingcreator.charactersFragment"
+        android:label="fragment_characters"
+        tools:layout="@layout/fragment_characters" />
 </navigation>
