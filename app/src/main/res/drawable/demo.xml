@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!--    <path-->
+    <!--        android:name="light_triangle"-->
+    <!--        android:strokeColor="@color/colorBlack"-->
+    <!--        android:strokeWidth="2.5"-->
+    <!--        android:fillColor="@color/colorPrimary"-->
+    <!--        android:pathData="M 100,0 L 0,100 100,100 z" />-->
+
+    <!--    <path-->
+    <!--        android:name="dark_triangle"-->
+    <!--        android:strokeWidth="2.5"-->
+    <!--        android:strokeColor="@color/colorBlack"-->
+    <!--        android:fillColor="@color/colorPrimaryDark"-->
+    <!--        android:pathData="M 0,0 L 100,0 0,100 z" />-->
+
+    <path
+        android:fillColor="@color/colorBlack"
+        android:pathData="M 50 0, L 50,0 50, 0 z" />
+</vector>

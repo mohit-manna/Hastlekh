@@ -5,4 +5,5 @@
     <string name="suggestion">A</string>
     <string name="camera_permission">This feature needs camera usage permission as we use your mobile camera to scan the presence of an infrared camera. Allow the camera usage permission and scan room from our infrared camera scanner feature.</string>
     <string name="oK">Ok</string>
+    <string name="place_your_letter_inside_the_box_to_capture">Place your letter inside the box to capture</string>
 </resources>
