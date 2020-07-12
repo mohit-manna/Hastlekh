@@ -2,7 +2,6 @@ package com.incrementors.handwritingcreator;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
@@ -11,10 +10,9 @@ import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.MediaStore;
+import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
@@ -42,9 +40,10 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.List;
 
 public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
@@ -67,6 +66,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
 
         }
     };
+
     private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
     private Camera.Parameters mParameters;
@@ -93,26 +93,27 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
                 @Override
                 public void onClick(View v) {
                     animateView(v);
-                    Bitmap bitmapPicture = BitmapFactory.decodeByteArray(data, 0, data.length);
-                    Uri uriTarget = getActivity().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, new ContentValues());
-                    OutputStream imageFileOS;
-                    try {
-                        imageFileOS = getActivity().getContentResolver().openOutputStream(uriTarget);
-                        imageFileOS.write(data);
-                        imageFileOS.flush();
-                        imageFileOS.close();
-
-                        Toast.makeText(getContext(), "Image saved: " + uriTarget.toString(), Toast.LENGTH_LONG).show();
-                        Log.i("image", uriTarget.normalizeScheme().toString());
-
-                    } catch (FileNotFoundException e) {
-                        e.getMessage();
-                    } catch (IOException e) {
-                        e.getMessage();
+                    File appDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), getResources().getString(R.string.app_name));
+                    if (appDir.exists()) {
+                        try {
+                            Bitmap bitmapPicture = BitmapFactory.decodeByteArray(data, 0, data.length);
+                            String imageName = character.getText().toString().trim() + ".jpg";
+                            File file = new File(appDir, imageName);
+                            FileOutputStream fos = new FileOutputStream(file);
+                            fos.write(data);
+                            fos.close();
+                            Toast.makeText(getContext(), "Image saved: ", Toast.LENGTH_LONG).show();
+                        } catch (FileNotFoundException e) {
+                            e.getMessage();
+                        } catch (IOException e) {
+                            e.getMessage();
+                        }
+                        camera.startPreview();
+                        confirmImageLayout.setVisibility(View.GONE);
+                        cameraControlLayout.setVisibility(View.VISIBLE);
+                    } else {
+                        Toast.makeText(getContext(), "File not found", Toast.LENGTH_SHORT).show();
                     }
-                    camera.startPreview();
-                    confirmImageLayout.setVisibility(View.GONE);
-                    cameraControlLayout.setVisibility(View.VISIBLE);
                 }
             });
 
@@ -130,7 +131,6 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
     private InputMethodManager imm;
 
     public CameraFragment() {
-
     }
 
     public static Camera getCameraInstance() {
@@ -198,6 +198,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == CAMERA_AND_EXTERNAL_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                createFile();
                 Toast.makeText(view.getContext(), "Camera Permission Granted", Toast.LENGTH_SHORT).show();
                 init(view);
             } else {
@@ -414,6 +415,13 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
         if (surfaceView != null)
             surfaceView.setVisibility(View.VISIBLE);
     }
+
+    public void createFile() {
+        File appDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), getResources().getString(R.string.app_name));
+        if (!appDir.exists())
+            appDir.mkdirs();
+    }
+
 
     @Override
     public void onPause() {
