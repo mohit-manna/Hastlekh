@@ -16,7 +16,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="@color/colorTransparent"
-            android:visibility="gone">
+            android:visibility="visible">
 
             <SurfaceView
                 android:id="@+id/surface"
@@ -50,41 +50,93 @@
                 android:gravity="center"
                 android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="10dp"
-                    android:text="@string/suggestion"
-                    android:textColor="@color/colorAccent"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-
-                <RelativeLayout
+                <LinearLayout
+                    android:id="@+id/confirmImageLayout"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
 
                     <ImageView
-                        android:id="@+id/captureBtn"
+                        android:id="@+id/discardImage"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_centerInParent="true"
-                        android:layout_centerVertical="true"
-                        android:contentDescription="captureButton"
-                        android:src="@drawable/ic_round_camera_24" />
+                        android:contentDescription="@string/discardimage"
+                        android:src="@drawable/ic_round_close_24" />
 
-                    <ToggleButton
-                        android:id="@+id/toggleFlash"
-                        android:layout_width="40dp"
+                    <Space
+                        android:layout_width="100dp"
+                        android:layout_height="wrap_content" />
+
+                    <ImageView
+                        android:id="@+id/saveImage"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:layout_centerVertical="true"
-                        android:layout_marginEnd="10dp"
-                        android:background="@drawable/toggle_flash"
-                        android:textOff=""
-                        android:textOn="" />
+                        android:contentDescription="@string/saveimage"
+                        android:src="@drawable/ic_round_check_24" />
 
-                </RelativeLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/cameraControlLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:visibility="visible">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/characterLayout"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="10dp"
+                        app:boxBackgroundColor="@color/colorPrimary"
+                        app:boxBackgroundMode="none"
+                        app:boxStrokeColor="@color/colorAccent"
+                        app:counterEnabled="true"
+                        app:counterMaxLength="1">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/character"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/characterbox"
+                            android:cursorVisible="true"
+                            android:gravity="center_vertical"
+                            android:maxLength="1"
+                            android:textColor="@color/colorPrimary"
+                            android:textSize="20sp"
+                            android:textStyle="bold" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <ImageView
+                            android:id="@+id/captureBtn"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_centerInParent="true"
+                            android:layout_centerVertical="true"
+                            android:contentDescription="@string/capturebutton"
+                            android:src="@drawable/ic_round_camera_24" />
+
+                        <ToggleButton
+                            android:id="@+id/toggleFlash"
+                            android:layout_width="40dp"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:layout_marginEnd="10dp"
+                            android:background="@drawable/toggle_flash"
+                            android:textOff=""
+                            android:textOn="" />
+
+                    </RelativeLayout>
+                </LinearLayout>
 
             </LinearLayout>
         </FrameLayout>

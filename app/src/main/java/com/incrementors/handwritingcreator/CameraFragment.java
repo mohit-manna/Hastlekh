@@ -1,13 +1,18 @@
 package com.incrementors.handwritingcreator;
 
 import android.Manifest;
-import android.animation.Animator;
-import android.animation.ObjectAnimator;
+import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.hardware.Camera;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -19,10 +24,11 @@ import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.TranslateAnimation;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.TextView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
@@ -33,32 +39,95 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.List;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
-import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.List;
 
 public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
     private static final long ANIMATION_DURATION = 1000L;
     private static final int CAMERA_AND_EXTERNAL_REQUEST_CODE = 100;
+    Camera.ShutterCallback shutterCallback = new Camera.ShutterCallback() {
+
+        @Override
+        public void onShutter() {
+            // TODO Auto-generated method stub
+
+        }
+    };
+    Camera.PictureCallback pictureCallback_RAW = new Camera.PictureCallback() {
+
+        @Override
+        public void onPictureTaken(byte[] arg0, Camera arg1) {
+
+        }
+    };
     private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
     private Camera.Parameters mParameters;
     private Camera camera;
-    private TextView text;
-    private Animator animator;
     private FrameLayout frame;
     private CardView infoCard, request;
     private View view;
-    private ImageView captureButton;
+    private TextInputEditText character;
+    private Camera.Parameters parameters;
+    private ImageView captureButton, saveImage, discardImage;
     private ToggleButton flasbtn;
     private Camera.PictureCallback pictureCallback;
+    private CameraManager camManager;
+    private TextInputLayout characterInpuLayout;
+    private LinearLayout confirmImageLayout, cameraControlLayout;
+    Camera.PictureCallback pictureCallback_JPG = new Camera.PictureCallback() {
 
+        @Override
+        public void onPictureTaken(final byte[] data, Camera cam) {
+            // TODO Auto-generated method stub
+            confirmImageLayout.setVisibility(View.VISIBLE);
+            cameraControlLayout.setVisibility(View.GONE);
+            saveImage.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    animateView(v);
+                    Bitmap bitmapPicture = BitmapFactory.decodeByteArray(data, 0, data.length);
+                    Uri uriTarget = getActivity().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, new ContentValues());
+                    OutputStream imageFileOS;
+                    try {
+                        imageFileOS = getActivity().getContentResolver().openOutputStream(uriTarget);
+                        imageFileOS.write(data);
+                        imageFileOS.flush();
+                        imageFileOS.close();
+
+                        Toast.makeText(getContext(), "Image saved: " + uriTarget.toString(), Toast.LENGTH_LONG).show();
+                        Log.i("image", uriTarget.normalizeScheme().toString());
+
+                    } catch (FileNotFoundException e) {
+                        e.getMessage();
+                    } catch (IOException e) {
+                        e.getMessage();
+                    }
+                    camera.startPreview();
+                    confirmImageLayout.setVisibility(View.GONE);
+                    cameraControlLayout.setVisibility(View.VISIBLE);
+                }
+            });
+
+            discardImage.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    animateView(v);
+                    camera.startPreview();
+                    confirmImageLayout.setVisibility(View.GONE);
+                    cameraControlLayout.setVisibility(View.VISIBLE);
+                }
+            });
+        }
+    };
+    private InputMethodManager imm;
 
     public CameraFragment() {
 
@@ -139,40 +208,38 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
     }
 
     private void init(View view) {
+        imm = (InputMethodManager) getContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
         frame = view.findViewById(R.id.frame);
         captureButton = view.findViewById(R.id.captureBtn);
-        text = view.findViewById(R.id.text);
+        character = view.findViewById(R.id.character);
         surfaceView = view.findViewById(R.id.surface);
         flasbtn = view.findViewById(R.id.toggleFlash);
-        animator = ObjectAnimator.ofFloat(text, View.ALPHA, 0f, 1f);
+        saveImage = view.findViewById(R.id.saveImage);
+        discardImage = view.findViewById(R.id.discardImage);
+        confirmImageLayout = view.findViewById(R.id.confirmImageLayout);
+        cameraControlLayout = view.findViewById(R.id.cameraControlLayout);
+        characterInpuLayout = view.findViewById(R.id.characterLayout);
         infoCard.setVisibility(View.GONE);
         frame.setVisibility(View.VISIBLE);
-        createSurface();
-        pictureCallback = new Camera.PictureCallback() {
+        surfaceView.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onPictureTaken(byte[] data, Camera camera) {
-                File pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
-                if (pictureFile == null) {
-                    Log.d(String.valueOf(getContext()), "Error creating media file, check storage permissions");
-                    return;
-                }
-
-                try {
-                    FileOutputStream fos = new FileOutputStream(pictureFile);
-                    fos.write(data);
-                    fos.close();
-                } catch (FileNotFoundException e) {
-                    Log.d(String.valueOf(getContext()), "File not found: " + e.getMessage());
-                } catch (IOException e) {
-                    Log.d(String.valueOf(getContext()), "Error accessing file: " + e.getMessage());
-                }
+            public void onClick(View v) {
+                character.clearFocus();
             }
-        };
+        });
+
+        createSurface();
+
         captureButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 animateView(v);
-                //dispatchTakePictureIntent();
+                if (character.getText().toString().trim().isEmpty()) {
+                    //Toast.makeText(getContext(), "Please enter character to map the image", Toast.LENGTH_LONG).show();
+                    character.setBackground(getResources().getDrawable(R.drawable.emptybox));
+                } else {
+                    camera.takePicture(shutterCallback, pictureCallback_RAW, pictureCallback_JPG);
+                }
             }
         });
 
@@ -181,21 +248,45 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     Toast.makeText(getContext(), "Checked", Toast.LENGTH_SHORT).show();
+                    turnFlashlightOn();
                 } else
                     Toast.makeText(getContext(), "Not Checked", Toast.LENGTH_SHORT).show();
             }
         });
+
+
+        character.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (hasFocus) {
+                    characterInpuLayout.setErrorEnabled(false);
+                } else {
+                    imm.hideSoftInputFromWindow(character.getWindowToken(), 0);
+                    character.setBackground(getResources().getDrawable(R.drawable.characterbox));
+                }
+            }
+        });
     }
 
-    private File getOutputMediaFile(int mediaTypeImage) {
-        File file = null;
-        return file;
-    }
 
-    private void dispatchTakePictureIntent() {
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        if (takePictureIntent.resolveActivity(getActivity().getPackageManager()) != null) {
-            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+    private void turnFlashlightOn() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                camManager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
+                String cameraId = null;
+                if (camManager != null) {
+                    cameraId = camManager.getCameraIdList()[0];
+                    camManager.setTorchMode(cameraId, true);
+                }
+            } catch (CameraAccessException e) {
+                Log.e(getContext().toString(), e.toString());
+            }
+        } else {
+            camera = Camera.open();
+            parameters = camera.getParameters();
+            parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+            camera.setParameters(parameters);
+            camera.startPreview();
         }
     }
 
@@ -206,10 +297,10 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
     }
 
     public void animateView(final View v) {
-        v.animate().scaleX(0.80f).scaleY(0.80f).setDuration(20).withEndAction(new Runnable() {
+        v.animate().scaleX(0.80f).scaleY(0.80f).setDuration(50).withEndAction(new Runnable() {
             @Override
             public void run() {
-                v.animate().scaleX(1.0f).scaleY(1.0f).setDuration(20);
+                v.animate().scaleX(1.0f).scaleY(1.0f).setDuration(50);
             }
         });
     }
@@ -256,12 +347,12 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
         camera = getCameraInstance();
         camera.stopPreview();
         mParameters = camera.getParameters();
-        setParameter(mParameters);
+        setParameter(mParameters, true);
         camera.setPreviewDisplay(holder);
         camera.startPreview();
     }
 
-    public void setParameter(Camera.Parameters parameters) {
+    public void setParameter(Camera.Parameters parameters, boolean flashValue) {
         try {
             parameters = camera.getParameters();
 
@@ -285,6 +376,23 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
             List<?> whiteMode = parameters.getSupportedWhiteBalance();
             if (whiteMode != null && whiteMode.contains(android.hardware.Camera.Parameters.WHITE_BALANCE_AUTO)) {
                 parameters.setWhiteBalance(Camera.Parameters.WHITE_BALANCE_AUTO);
+            }
+
+            if (flashValue) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    try {
+                        camManager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
+                        String cameraId = null;
+                        if (camManager != null) {
+                            cameraId = camManager.getCameraIdList()[0];
+                            camManager.setTorchMode(cameraId, true);
+                        }
+                    } catch (CameraAccessException e) {
+                        Log.e(getContext().toString(), e.toString());
+                    }
+                } else {
+                    parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+                }
             }
 
             camera.setParameters(parameters);
@@ -314,4 +422,5 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
         if (surfaceView != null)
             surfaceView.setVisibility(View.GONE);
     }
+
 }
