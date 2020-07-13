@@ -15,8 +15,7 @@
             android:id="@+id/frame"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@color/colorTransparent"
-            android:visibility="visible">
+            android:background="@color/colorTransparent">
 
             <SurfaceView
                 android:id="@+id/surface"
@@ -30,7 +29,7 @@
                 android:layout_marginTop="10dp"
                 android:gravity="center"
                 android:text="@string/place_your_letter_inside_the_box_to_capture"
-                android:textColor="@color/colorAccent"
+                android:textColor="@color/colorTwitterBlue"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
@@ -50,33 +49,45 @@
                 android:gravity="center"
                 android:orientation="vertical">
 
-                <LinearLayout
+                <androidx.cardview.widget.CardView
                     android:id="@+id/confirmImageLayout"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:orientation="horizontal"
-                    android:visibility="gone">
+                    android:visibility="gone"
+                    app:cardBackgroundColor="#A6FAFAFA"
+                    app:cardCornerRadius="50dp"
+                    app:cardUseCompatPadding="true">
 
-                    <ImageView
-                        android:id="@+id/discardImage"
-                        android:layout_width="wrap_content"
+                    <RelativeLayout
+                        android:layout_width="300dp"
                         android:layout_height="wrap_content"
-                        android:contentDescription="@string/discardimage"
-                        android:src="@drawable/ic_round_close_24" />
+                        android:background="@color/colorTransparent"
+                        android:paddingStart="10dp"
+                        android:paddingTop="5dp"
+                        android:paddingEnd="10dp"
+                        android:paddingBottom="5dp">
 
-                    <Space
-                        android:layout_width="100dp"
-                        android:layout_height="wrap_content" />
+                        <ImageView
+                            android:id="@+id/discardImage"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:contentDescription="@string/discardimage"
+                            android:src="@drawable/ic_round_close_24" />
 
-                    <ImageView
-                        android:id="@+id/saveImage"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:contentDescription="@string/saveimage"
-                        android:src="@drawable/ic_round_check_24" />
+                        <Space
+                            android:layout_width="100dp"
+                            android:layout_height="wrap_content" />
 
-                </LinearLayout>
+                        <ImageView
+                            android:id="@+id/saveImage"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:contentDescription="@string/saveimage"
+                            android:src="@drawable/ic_round_check_24" />
+
+                    </RelativeLayout>
+                </androidx.cardview.widget.CardView>
 
                 <LinearLayout
                     android:id="@+id/cameraControlLayout"
@@ -111,31 +122,62 @@
                             android:textStyle="bold" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <RelativeLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/cameraControlCard"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:cardBackgroundColor="#A6FAFAFA"
+                        app:cardCornerRadius="50dp"
+                        app:cardUseCompatPadding="true">
 
-                        <ImageView
-                            android:id="@+id/captureBtn"
-                            android:layout_width="wrap_content"
+                        <RelativeLayout
+                            android:layout_width="330dp"
                             android:layout_height="wrap_content"
-                            android:layout_centerInParent="true"
-                            android:layout_centerVertical="true"
-                            android:contentDescription="@string/capturebutton"
-                            android:src="@drawable/ic_round_camera_24" />
+                            android:paddingStart="10dp"
+                            android:paddingTop="5dp"
+                            android:paddingEnd="10dp"
+                            android:paddingBottom="5dp">
 
-                        <ToggleButton
-                            android:id="@+id/toggleFlash"
-                            android:layout_width="40dp"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true"
-                            android:layout_marginEnd="10dp"
-                            android:background="@drawable/toggle_flash"
-                            android:textOff=""
-                            android:textOn="" />
+                            <androidx.cardview.widget.CardView
+                                android:id="@+id/imageContainer"
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
+                                android:layout_alignParentStart="true"
+                                android:layout_centerVertical="true"
+                                app:cardBackgroundColor="#ADFBFBFB"
+                                app:cardCornerRadius="50dp">
 
-                    </RelativeLayout>
+                                <ImageView
+                                    android:id="@+id/capturedImage"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:contentDescription="@string/capturebutton"
+                                    android:scaleType="centerCrop"
+                                    android:src="@drawable/ic_round_brightness_1_24" />
+
+                            </androidx.cardview.widget.CardView>
+
+                            <ImageView
+                                android:id="@+id/captureBtn"
+                                android:layout_width="60dp"
+                                android:layout_height="60dp"
+                                android:layout_centerInParent="true"
+                                android:contentDescription="@string/capturebutton"
+                                android:src="@drawable/ic_round_camera_24" />
+
+
+                            <ToggleButton
+                                android:id="@+id/toggleFlash"
+                                android:layout_width="40dp"
+                                android:layout_height="wrap_content"
+                                android:layout_alignParentEnd="true"
+                                android:layout_centerVertical="true"
+                                android:background="@drawable/toggle_flash"
+                                android:textOff=""
+                                android:textOn="" />
+
+                        </RelativeLayout>
+                    </androidx.cardview.widget.CardView>
                 </LinearLayout>
 
             </LinearLayout>

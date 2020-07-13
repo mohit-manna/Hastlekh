@@ -48,7 +48,22 @@ import java.util.List;
 public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
 
     private static final int CAMERA_AND_EXTERNAL_REQUEST_CODE = 100;
-
+    private SurfaceView surfaceView;
+    private SurfaceHolder surfaceHolder;
+    private Camera.Parameters mParameters;
+    private Camera camera;
+    private FrameLayout frame;
+    private CardView infoCard, request, capturedImageContainer;
+    private View view;
+    private TextInputEditText character;
+    private Camera.Parameters parameters;
+    private ImageView captureButton, saveImage, discardImage, capturedImage;
+    private ToggleButton flasbtn;
+    private Camera.PictureCallback pictureCallback;
+    private CameraManager camManager;
+    private CardView confirmImageLayout;
+    private TextInputLayout characterInpuLayout;
+    private LinearLayout cameraControlLayout;
     Camera.PictureCallback pictureCallback_JPG = new Camera.PictureCallback() {
 
         @Override
@@ -71,12 +86,21 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
                             //fos.write(data);
                             bitmapPicture.compress(Bitmap.CompressFormat.JPEG, 100, fos);
                             fos.close();
-                            Toast.makeText(getContext(), "Image saved: ", Toast.LENGTH_LONG).show();
+                            //Toast.makeText(getContext(), "Image saved: ", Toast.LENGTH_LONG).show();
+
+                            //displaying captured image into imageview
+
+                            Bitmap bitmap = BitmapFactory.decodeFile(appDir + "/" + imageName);
+                            capturedImage.setImageBitmap(bitmap);
+
+
                         } catch (FileNotFoundException e) {
                             e.getMessage();
                         } catch (IOException e) {
                             e.getMessage();
                         }
+
+
                         camera.startPreview();
                         confirmImageLayout.setVisibility(View.GONE);
                         cameraControlLayout.setVisibility(View.VISIBLE);
@@ -97,21 +121,6 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
             });
         }
     };
-    private SurfaceView surfaceView;
-    private SurfaceHolder surfaceHolder;
-    private Camera.Parameters mParameters;
-    private Camera camera;
-    private FrameLayout frame;
-    private CardView infoCard, request;
-    private View view;
-    private TextInputEditText character;
-    private Camera.Parameters parameters;
-    private ImageView captureButton, saveImage, discardImage;
-    private ToggleButton flasbtn;
-    private Camera.PictureCallback pictureCallback;
-    private CameraManager camManager;
-    private TextInputLayout characterInpuLayout;
-    private LinearLayout confirmImageLayout, cameraControlLayout;
     private boolean flash;
     private InputMethodManager imm;
 
@@ -160,6 +169,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         this.view = view;
+        init(view);
         infoCard = view.findViewById(R.id.alert_card);
         request = view.findViewById(R.id.request);
         if (hasCameraHardware(view.getContext())) {
@@ -172,17 +182,16 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
     //checking for camera permission
     private void checkPermission(String permission, int requestCode) {
         if (ContextCompat.checkSelfPermission(getContext(), permission) == PackageManager.PERMISSION_DENIED) {
-            infoCard.setVisibility(View.VISIBLE);
-            request.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    animateView(v);
-                    ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, CAMERA_AND_EXTERNAL_REQUEST_CODE);
-                }
-            });
+//            infoCard.setVisibility(View.VISIBLE);
+//            request.setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View v) {
+//                    animateView(v);
+            ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, CAMERA_AND_EXTERNAL_REQUEST_CODE);
+//                }
+//            });
         } else {
             //Toast.makeText(this, "Permission already granted", Toast.LENGTH_SHORT).show();
-            init(view);
         }
     }
 
@@ -192,8 +201,10 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
         if (requestCode == CAMERA_AND_EXTERNAL_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 createFile();
+//                infoCard.setVisibility(View.GONE);
                 Toast.makeText(view.getContext(), "Camera Permission Granted", Toast.LENGTH_SHORT).show();
-                init(view);
+                //init(view);
+                createSurface();
             } else {
                 //Toast.makeText(this, " naa naa naa Camera Permission Denied", Toast.LENGTH_LONG).show();
                 getActivity().finish();
@@ -204,21 +215,28 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
     private void init(View view) {
         imm = (InputMethodManager) getContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
         frame = view.findViewById(R.id.frame);
-        captureButton = view.findViewById(R.id.captureBtn);
         character = view.findViewById(R.id.character);
         surfaceView = view.findViewById(R.id.surface);
         flasbtn = view.findViewById(R.id.toggleFlash);
         saveImage = view.findViewById(R.id.saveImage);
+        captureButton = view.findViewById(R.id.captureBtn);
         discardImage = view.findViewById(R.id.discardImage);
+        capturedImage = view.findViewById(R.id.capturedImage);
+        capturedImageContainer = view.findViewById(R.id.imageContainer);
         confirmImageLayout = view.findViewById(R.id.confirmImageLayout);
         cameraControlLayout = view.findViewById(R.id.cameraControlLayout);
         characterInpuLayout = view.findViewById(R.id.characterLayout);
-        infoCard.setVisibility(View.GONE);
-        frame.setVisibility(View.VISIBLE);
+//        frame.setVisibility(View.VISIBLE);
         surfaceView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 character.clearFocus();
+            }
+        });
+
+        capturedImageContainer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
             }
         });
 
@@ -241,6 +259,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
+//                    frame.setVisibility(View.VISIBLE);
                     Toast.makeText(getContext(), "Checked", Toast.LENGTH_SHORT).show();
                     flash = true;
                     try {
@@ -249,6 +268,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
                         e.printStackTrace();
                     }
                 } else {
+//                    frame.setVisibility(View.GONE);
                     flash = false;
                     try {
                         updateCamera(surfaceHolder);
