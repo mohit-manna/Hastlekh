@@ -5,11 +5,15 @@ import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.widget.ImageView;
 
+import java.lang.ref.WeakReference;
+
 public class ImageLoader extends AsyncTask<String, Void, Bitmap> {
     ImageView imageView;
+    private WeakReference<CharactersAdapter> charactersAdapterWeakReference;
 
-    ImageLoader(ImageView imageView) {
+    public ImageLoader(CharactersAdapter charactersAdapter, ImageView imageView) {
         this.imageView = imageView;
+        this.charactersAdapterWeakReference = new WeakReference<>(charactersAdapter);
     }
 
     @Override
@@ -22,7 +26,8 @@ public class ImageLoader extends AsyncTask<String, Void, Bitmap> {
     @Override
     protected void onPostExecute(Bitmap bitmap) {
         super.onPostExecute(bitmap);
-        if (bitmap != null)
-            imageView.setImageBitmap(bitmap);
+        if (charactersAdapterWeakReference.get() != null)
+            if (bitmap != null)
+                imageView.setImageBitmap(bitmap);
     }
 }

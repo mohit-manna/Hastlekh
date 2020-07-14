@@ -36,7 +36,7 @@ public class CharactersAdapter extends RecyclerView.Adapter<CharactersAdapter.Ch
         //File characterDir = new File(Environment.getExternalStorageDirectory(), context.getResources().getString(R.string.app_name));
 //        this.holder = holder;
         String path = characters.get(position).getAbsolutePath();
-        new ImageLoader(holder.characterImage).execute(path);
+        new ImageLoader(this, holder.characterImage).execute(path);
     }
 
     @Override
@@ -47,7 +47,6 @@ public class CharactersAdapter extends RecyclerView.Adapter<CharactersAdapter.Ch
     public class CharacterViewHolder extends RecyclerView.ViewHolder {
         ImageView characterImage;
         TextView characterName;
-
 
         public CharacterViewHolder(@NonNull View view) {
             super(view);
