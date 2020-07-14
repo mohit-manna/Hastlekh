@@ -10,6 +10,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+
 import java.io.File;
 import java.util.List;
 
@@ -33,10 +35,11 @@ public class CharactersAdapter extends RecyclerView.Adapter<CharactersAdapter.Ch
     @Override
     public void onBindViewHolder(@NonNull final CharacterViewHolder holder, final int position) {
         holder.characterName.setText(String.valueOf(characters.get(position).getName().charAt(0)));
-        //File characterDir = new File(Environment.getExternalStorageDirectory(), context.getResources().getString(R.string.app_name));
-//        this.holder = holder;
         String path = characters.get(position).getAbsolutePath();
-        new ImageLoader(this, holder.characterImage).execute(path);
+        Glide.with(context)
+                .asBitmap()
+                .load(path)
+                .into(holder.characterImage);
     }
 
     @Override

@@ -87,15 +87,17 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
                         try {
                             Bitmap bitmapPicture = BitmapFactory.decodeByteArray(data, 0, data.length);
                             bitmapPicture = rotateImage(bitmapPicture, 90);
+                            bitmapPicture = crop(bitmapPicture);
                             String imageName = character.getText().toString().trim() + ".png";
                             File file = new File(appDir, imageName);
                             FileOutputStream fos = new FileOutputStream(file);
+
                             //fos.write(data);
+
                             bitmapPicture.compress(Bitmap.CompressFormat.PNG, 80, fos);
                             fos.close();
-                            //Toast.makeText(getContext(), "Image saved: ", Toast.LENGTH_LONG).show();
 
-                            //displaying captured image into imageview
+                            Toast.makeText(getContext(), "Image saved", Toast.LENGTH_LONG).show();
 
                             Bitmap bitmap = BitmapFactory.decodeFile(appDir + "/" + imageName);
 
@@ -112,7 +114,6 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
                         } catch (IOException e) {
                             e.getMessage();
                         }
-
 
                         camera.startPreview();
                         confirmImageLayout.setVisibility(View.GONE);
@@ -243,7 +244,8 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
         characterInpuLayout = view.findViewById(R.id.characterLayout);
 
         characterList.setHasFixedSize(true);
-        characterList.setItemViewCacheSize(20);
+//        characterList.setItemViewCacheSize(20);
+//        characterList.setDrawingCacheEnabled(true);
 
         //initializing file path
         path = Environment.getExternalStorageDirectory().toString() + "/" + getResources().getString(R.string.app_name);
@@ -354,6 +356,19 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
             }
         });
     }
+
+
+    public Bitmap crop(Bitmap source) {
+        int size = Math.min(source.getWidth(), source.getHeight());
+        int x = (source.getWidth() - size) / 2;
+        int y = (source.getHeight() - size) / 2;
+        Bitmap result = Bitmap.createBitmap(source, x, y, size, size);
+        if (result != source) {
+            source.recycle();
+        }
+        return result;
+    }
+
 
     public void hideGallery() {
         if (infoCard.getVisibility() == View.VISIBLE)
