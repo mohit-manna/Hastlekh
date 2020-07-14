@@ -88,13 +88,13 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
                             Bitmap bitmapPicture = BitmapFactory.decodeByteArray(data, 0, data.length);
                             bitmapPicture = rotateImage(bitmapPicture, 90);
                             bitmapPicture = crop(bitmapPicture);
-                            String imageName = character.getText().toString().trim() + ".png";
+                            String imageName = character.getText().toString().trim() + ".webp";
                             File file = new File(appDir, imageName);
                             FileOutputStream fos = new FileOutputStream(file);
 
                             //fos.write(data);
 
-                            bitmapPicture.compress(Bitmap.CompressFormat.PNG, 80, fos);
+                            bitmapPicture.compress(Bitmap.CompressFormat.WEBP, 100, fos);
                             fos.close();
 
                             Toast.makeText(getContext(), "Image saved", Toast.LENGTH_LONG).show();
