@@ -3,6 +3,7 @@ package com.incrementors.handwritingcreator;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
@@ -23,7 +24,6 @@ import android.view.animation.LinearInterpolator;
 import android.view.animation.TranslateAnimation;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.CompoundButton;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -35,6 +35,8 @@ import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -43,17 +45,20 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+
+import static android.content.Context.MODE_PRIVATE;
 
 public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
 
     private static final int CAMERA_AND_EXTERNAL_REQUEST_CODE = 100;
+    static String path;
     private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
     private Camera.Parameters mParameters;
     private Camera camera;
-    private FrameLayout frame;
-    private CardView infoCard, request, capturedImageContainer;
+    private CardView infoCard, confirmImageLayout;
     private View view;
     private TextInputEditText character;
     private Camera.Parameters parameters;
@@ -61,9 +66,10 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
     private ToggleButton flasbtn;
     private Camera.PictureCallback pictureCallback;
     private CameraManager camManager;
-    private CardView confirmImageLayout;
+    private RecyclerView characterList;
+    private CharactersAdapter charactersAdapter;
     private TextInputLayout characterInpuLayout;
-    private LinearLayout cameraControlLayout;
+    private LinearLayout cameraControlLayout, controlsLayout;
     Camera.PictureCallback pictureCallback_JPG = new Camera.PictureCallback() {
 
         @Override
@@ -75,22 +81,29 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
                 @Override
                 public void onClick(View v) {
                     animateView(v);
-                    File appDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), getResources().getString(R.string.app_name));
+                    createFile();
+                    File appDir = new File(Environment.getExternalStorageDirectory(), getResources().getString(R.string.app_name));
                     if (appDir.exists()) {
                         try {
                             Bitmap bitmapPicture = BitmapFactory.decodeByteArray(data, 0, data.length);
                             bitmapPicture = rotateImage(bitmapPicture, 90);
-                            String imageName = character.getText().toString().trim() + ".jpg";
+                            String imageName = character.getText().toString().trim() + ".png";
                             File file = new File(appDir, imageName);
                             FileOutputStream fos = new FileOutputStream(file);
                             //fos.write(data);
-                            bitmapPicture.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+                            bitmapPicture.compress(Bitmap.CompressFormat.PNG, 80, fos);
                             fos.close();
                             //Toast.makeText(getContext(), "Image saved: ", Toast.LENGTH_LONG).show();
 
                             //displaying captured image into imageview
 
                             Bitmap bitmap = BitmapFactory.decodeFile(appDir + "/" + imageName);
+
+                            SharedPreferences sh = getContext().getSharedPreferences(getResources().getString(R.string.app_name), MODE_PRIVATE);
+                            SharedPreferences.Editor editor = sh.edit();
+                            editor.putString("lastsavedimage", imageName);
+                            editor.commit();
+
                             capturedImage.setImageBitmap(bitmap);
 
 
@@ -125,6 +138,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
     private InputMethodManager imm;
 
     public CameraFragment() {
+
     }
 
     public static Camera getCameraInstance() {
@@ -145,9 +159,21 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
         return rotatedImg;
     }
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public void populateCharacters() {
+        File appDir = new File(Environment.getExternalStorageDirectory(), getResources().getString(R.string.app_name));
+        if (appDir.exists()) {
+//            Log.d("Files", "Path: " + path);
+            File directory = new File(path);
+            List<File> files = Arrays.asList(directory.listFiles());
+            charactersAdapter = new CharactersAdapter(getContext(), files);
+            characterList.setAdapter(charactersAdapter);
+            characterList.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+//            Log.d("Files", "Size: " + files.size());
+//            Log.d("Files list", files.toString());
+//            for (int i = 0; i < files.length; i++) {
+//                Log.d("Files", "FileName:" + files[i].getName());
+//            }
+        }
     }
 
     public void animate(View v) {
@@ -170,8 +196,6 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
         super.onViewCreated(view, savedInstanceState);
         this.view = view;
         init(view);
-        infoCard = view.findViewById(R.id.alert_card);
-        request = view.findViewById(R.id.request);
         if (hasCameraHardware(view.getContext())) {
             checkPermission(Manifest.permission.CAMERA, CAMERA_AND_EXTERNAL_REQUEST_CODE);
         } else {
@@ -182,16 +206,9 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
     //checking for camera permission
     private void checkPermission(String permission, int requestCode) {
         if (ContextCompat.checkSelfPermission(getContext(), permission) == PackageManager.PERMISSION_DENIED) {
-//            infoCard.setVisibility(View.VISIBLE);
-//            request.setOnClickListener(new View.OnClickListener() {
-//                @Override
-//                public void onClick(View v) {
-//                    animateView(v);
             ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, CAMERA_AND_EXTERNAL_REQUEST_CODE);
-//                }
-//            });
         } else {
-            //Toast.makeText(this, "Permission already granted", Toast.LENGTH_SHORT).show();
+            createSurface();
         }
     }
 
@@ -200,10 +217,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == CAMERA_AND_EXTERNAL_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                createFile();
-//                infoCard.setVisibility(View.GONE);
                 Toast.makeText(view.getContext(), "Camera Permission Granted", Toast.LENGTH_SHORT).show();
-                //init(view);
                 createSurface();
             } else {
                 //Toast.makeText(this, " naa naa naa Camera Permission Denied", Toast.LENGTH_LONG).show();
@@ -214,7 +228,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
 
     private void init(View view) {
         imm = (InputMethodManager) getContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
-        frame = view.findViewById(R.id.frame);
+        infoCard = view.findViewById(R.id.alert_card);
         character = view.findViewById(R.id.character);
         surfaceView = view.findViewById(R.id.surface);
         flasbtn = view.findViewById(R.id.toggleFlash);
@@ -222,21 +236,56 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
         captureButton = view.findViewById(R.id.captureBtn);
         discardImage = view.findViewById(R.id.discardImage);
         capturedImage = view.findViewById(R.id.capturedImage);
-        capturedImageContainer = view.findViewById(R.id.imageContainer);
+        characterList = view.findViewById(R.id.characterList);
+        controlsLayout = view.findViewById(R.id.controlsLayout);
         confirmImageLayout = view.findViewById(R.id.confirmImageLayout);
         cameraControlLayout = view.findViewById(R.id.cameraControlLayout);
         characterInpuLayout = view.findViewById(R.id.characterLayout);
-//        frame.setVisibility(View.VISIBLE);
-        surfaceView.setOnClickListener(new View.OnClickListener() {
+
+        characterList.setHasFixedSize(true);
+        characterList.setItemViewCacheSize(20);
+
+        //initializing file path
+        path = Environment.getExternalStorageDirectory().toString() + "/" + getResources().getString(R.string.app_name);
+
+        //getting last saved image
+        SharedPreferences preferences = getContext().getSharedPreferences(getResources().getString(R.string.app_name), MODE_PRIVATE);
+        if (preferences.contains("lastsavedimage")) {
+            Bitmap bitmap = BitmapFactory.decodeFile(path + "/" + preferences.getString("lastsavedimage", ""));
+            //setting last saved image in imageview
+            capturedImage.setImageBitmap(bitmap);
+        }
+
+        capturedImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //Toast.makeText(getContext(), "image container clicked", Toast.LENGTH_LONG).show();
+                showGallery();
+                hideCharacterInputBox();
+                populateCharacters();
+            }
+        });
+
+        cameraControlLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 character.clearFocus();
             }
         });
 
-        capturedImageContainer.setOnClickListener(new View.OnClickListener() {
+        controlsLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                character.clearFocus();
+            }
+        });
+
+        surfaceView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                character.clearFocus();
+                hideGallery();
+                showCharacterInputBox();
             }
         });
 
@@ -246,6 +295,9 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
             @Override
             public void onClick(View v) {
                 animateView(v);
+                hideGallery();
+                showCharacterInputBox();
+
                 if (character.getText().toString().trim().isEmpty()) {
                     //Toast.makeText(getContext(), "Please enter character to map the image", Toast.LENGTH_LONG).show();
                     character.setBackground(getResources().getDrawable(R.drawable.emptybox));
@@ -259,7 +311,8 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
-//                    frame.setVisibility(View.VISIBLE);
+                    hideGallery();
+                    showCharacterInputBox();
                     Toast.makeText(getContext(), "Checked", Toast.LENGTH_SHORT).show();
                     flash = true;
                     try {
@@ -268,7 +321,8 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
                         e.printStackTrace();
                     }
                 } else {
-//                    frame.setVisibility(View.GONE);
+                    hideGallery();
+                    showCharacterInputBox();
                     flash = false;
                     try {
                         updateCamera(surfaceHolder);
@@ -279,7 +333,6 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
                 }
             }
         });
-
 
         character.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
@@ -292,28 +345,35 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
                 }
             }
         });
+
+        cameraControlLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideGallery();
+                showCharacterInputBox();
+            }
+        });
     }
 
-//    private void turnFlashlightOn() {
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//            try {
-//                camManager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
-//                String cameraId = null;
-//                if (camManager != null) {
-//                    cameraId = camManager.getCameraIdList()[0];
-//                    camManager.setTorchMode(cameraId, true);
-//                }
-//            } catch (CameraAccessException e) {
-//                Log.e(getContext().toString(), e.toString());
-//            }
-//        } else {
-//            camera = Camera.open();
-//            parameters = camera.getParameters();
-//            parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
-//            camera.setParameters(parameters);
-//            camera.startPreview();
-//        }
-//    }
+    public void hideGallery() {
+        if (infoCard.getVisibility() == View.VISIBLE)
+            infoCard.setVisibility(View.GONE);
+    }
+
+    public void showGallery() {
+        if (infoCard.getVisibility() == View.GONE)
+            infoCard.setVisibility(View.VISIBLE);
+    }
+
+    public void hideCharacterInputBox() {
+        if (characterInpuLayout.getVisibility() == View.VISIBLE)
+            characterInpuLayout.setVisibility(View.GONE);
+    }
+
+    public void showCharacterInputBox() {
+        if (characterInpuLayout.getVisibility() == View.GONE)
+            characterInpuLayout.setVisibility(View.VISIBLE);
+    }
 
     public void createSurface() {
         surfaceHolder = surfaceView.getHolder();
@@ -437,9 +497,12 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
     }
 
     public void createFile() {
-        File appDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), getResources().getString(R.string.app_name));
-        if (!appDir.exists())
-            appDir.mkdirs();
+        File newdir = new File(Environment.getExternalStorageDirectory(), getResources().getString(R.string.app_name));
+        if (!newdir.exists())
+            if (!newdir.mkdirs())
+                Log.d("File creation", "failed to create directory");
+            else
+                Log.d("File creation", "file created successfully");
     }
 
     @Override
