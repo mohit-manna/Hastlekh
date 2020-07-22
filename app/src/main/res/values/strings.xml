@@ -10,4 +10,5 @@
     <string name="capturebutton">captureButton</string>
     <string name="discardimage">discardImage</string>
     <string name="character">A</string>
+    <string name="characterimage">characterImage</string>
 </resources>

@@ -6,6 +6,11 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="statusBarBackground">@color/colorTransparent</item>
+        <!--        <item name="android:windowAnimationStyle">@style/WindowAnimations</item>-->
+    </style>
+
+    <style name="WindowAnimations">
+        <item name="android:windowEnterAnimation">@anim/enter</item>
     </style>
 
 </resources>

@@ -11,6 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 
 import java.io.File;
 import java.util.List;
@@ -19,6 +20,7 @@ public class CharactersAdapter extends RecyclerView.Adapter<CharactersAdapter.Ch
     List<File> characters;
     Context context;
     CharacterViewHolder holder;
+    ItemClickListener clickListener;
 
     public CharactersAdapter(Context context, List<File> characters) {
         this.context = context;
@@ -39,6 +41,9 @@ public class CharactersAdapter extends RecyclerView.Adapter<CharactersAdapter.Ch
         Glide.with(context)
                 .asBitmap()
                 .load(path)
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .skipMemoryCache(true)
+                .centerCrop()
                 .into(holder.characterImage);
     }
 
@@ -47,7 +52,8 @@ public class CharactersAdapter extends RecyclerView.Adapter<CharactersAdapter.Ch
         return characters.size();
     }
 
-    public class CharacterViewHolder extends RecyclerView.ViewHolder {
+
+    public class CharacterViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         ImageView characterImage;
         TextView characterName;
 
@@ -55,6 +61,13 @@ public class CharactersAdapter extends RecyclerView.Adapter<CharactersAdapter.Ch
             super(view);
             characterImage = view.findViewById(R.id.characterImage);
             characterName = view.findViewById(R.id.characterName);
+            view.setOnClickListener(this);
+        }
+
+        @Override
+        public void onClick(View v) {
+            if (clickListener != null) clickListener.onClick(v, getAdapterPosition());
+
         }
     }
 }

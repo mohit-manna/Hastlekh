@@ -8,7 +8,11 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraManager;
 import android.os.Bundle;
@@ -24,8 +28,10 @@ import android.view.animation.LinearInterpolator;
 import android.view.animation.TranslateAnimation;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.CompoundButton;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
@@ -50,8 +56,8 @@ import java.util.List;
 
 import static android.content.Context.MODE_PRIVATE;
 
-public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
-
+public class CameraFragment extends Fragment implements SurfaceHolder.Callback, ItemClickListener {
+    private static final float COLOR_TOLERANCE = 50;
     private static final int CAMERA_AND_EXTERNAL_REQUEST_CODE = 100;
     static String path;
     private SurfaceView surfaceView;
@@ -60,6 +66,8 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
     private Camera camera;
     private CardView infoCard, confirmImageLayout;
     private View view;
+    private List<File> files;
+    private TextView suggestion;
     private TextInputEditText character;
     private Camera.Parameters parameters;
     private ImageView captureButton, saveImage, discardImage, capturedImage;
@@ -69,7 +77,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
     private RecyclerView characterList;
     private CharactersAdapter charactersAdapter;
     private TextInputLayout characterInpuLayout;
-    private LinearLayout cameraControlLayout, controlsLayout;
+    private LinearLayout cameraControlLayout, controlsLayout, scanner;
     Camera.PictureCallback pictureCallback_JPG = new Camera.PictureCallback() {
 
         @Override
@@ -87,7 +95,12 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
                         try {
                             Bitmap bitmapPicture = BitmapFactory.decodeByteArray(data, 0, data.length);
                             bitmapPicture = rotateImage(bitmapPicture, 90);
+
                             bitmapPicture = crop(bitmapPicture);
+                            //bitmapPicture = getGrayScale(bitmapPicture);
+                            bitmapPicture = removeBack(bitmapPicture);
+
+
                             String imageName = character.getText().toString().trim() + ".webp";
                             File file = new File(appDir, imageName);
                             FileOutputStream fos = new FileOutputStream(file);
@@ -97,7 +110,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
                             bitmapPicture.compress(Bitmap.CompressFormat.WEBP, 100, fos);
                             fos.close();
 
-                            Toast.makeText(getContext(), "Image saved", Toast.LENGTH_LONG).show();
+                            //Toast.makeText(getContext(), "Image saved", Toast.LENGTH_LONG).show();
 
                             Bitmap bitmap = BitmapFactory.decodeFile(appDir + "/" + imageName);
 
@@ -107,7 +120,6 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
                             editor.commit();
 
                             capturedImage.setImageBitmap(bitmap);
-
 
                         } catch (FileNotFoundException e) {
                             e.getMessage();
@@ -135,6 +147,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
             });
         }
     };
+    private FrameLayout frame;
     private boolean flash;
     private InputMethodManager imm;
 
@@ -165,15 +178,10 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
         if (appDir.exists()) {
 //            Log.d("Files", "Path: " + path);
             File directory = new File(path);
-            List<File> files = Arrays.asList(directory.listFiles());
+            files = Arrays.asList(directory.listFiles());
             charactersAdapter = new CharactersAdapter(getContext(), files);
             characterList.setAdapter(charactersAdapter);
             characterList.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
-//            Log.d("Files", "Size: " + files.size());
-//            Log.d("Files list", files.toString());
-//            for (int i = 0; i < files.length; i++) {
-//                Log.d("Files", "FileName:" + files[i].getName());
-//            }
         }
     }
 
@@ -189,7 +197,8 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_camera, container, false);
+        View view = inflater.inflate(R.layout.fragment_camera, container, false);
+        return view;
     }
 
     @Override
@@ -234,7 +243,10 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
         surfaceView = view.findViewById(R.id.surface);
         flasbtn = view.findViewById(R.id.toggleFlash);
         saveImage = view.findViewById(R.id.saveImage);
+        suggestion = view.findViewById(R.id.suggestion);
         captureButton = view.findViewById(R.id.captureBtn);
+        scanner = view.findViewById(R.id.scanner);
+        frame = view.findViewById(R.id.frame);
         discardImage = view.findViewById(R.id.discardImage);
         capturedImage = view.findViewById(R.id.capturedImage);
         characterList = view.findViewById(R.id.characterList);
@@ -244,8 +256,6 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
         characterInpuLayout = view.findViewById(R.id.characterLayout);
 
         characterList.setHasFixedSize(true);
-//        characterList.setItemViewCacheSize(20);
-//        characterList.setDrawingCacheEnabled(true);
 
         //initializing file path
         path = Environment.getExternalStorageDirectory().toString() + "/" + getResources().getString(R.string.app_name);
@@ -262,9 +272,13 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
             @Override
             public void onClick(View v) {
                 //Toast.makeText(getContext(), "image container clicked", Toast.LENGTH_LONG).show();
-                showGallery();
-                hideCharacterInputBox();
-                populateCharacters();
+                if (capturedImage.getDrawable() != null) {
+                    showGallery();
+                    hideCharacterInputBox();
+                    populateCharacters();
+                } else {
+                    hideGallery();
+                }
             }
         });
 
@@ -357,16 +371,45 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
         });
     }
 
+    //I added this method because people keep asking how
+    //to calculate the dimensions of the bitmap...see comments below
+    public int getSquareCropDimensionForBitmap(Bitmap bitmap) {
+        //use the smallest dimension of the image to crop to
+        return Math.min(bitmap.getWidth() / 4, bitmap.getHeight() / 4);
+    }
+
+    public Bitmap getGrayScale(Bitmap src) {
+        float[] matrix = new float[]{
+                0.3f, 0.59f, 0.11f, 0, 0,
+                0.3f, 0.59f, 0.11f, 0, 0,
+                0.3f, 0.59f, 0.11f, 0, 0,
+                0, 0, 0, 1, 0,
+        };
+
+        Bitmap dest = Bitmap.createBitmap(src.getWidth(), src.getHeight(), src.getConfig());
+        Canvas canvas = new Canvas(dest);
+        Paint paint = new Paint();
+        ColorMatrixColorFilter filter = new ColorMatrixColorFilter(matrix);
+        paint.setColorFilter(filter);
+        canvas.drawBitmap(src, 0, 0, paint);
+        return dest;
+    }
 
     public Bitmap crop(Bitmap source) {
-        int size = Math.min(source.getWidth(), source.getHeight());
-        int x = (source.getWidth() - size) / 2;
-        int y = (source.getHeight() - size) / 2;
-        Bitmap result = Bitmap.createBitmap(source, x, y, size, size);
-        if (result != source) {
-            source.recycle();
-        }
-        return result;
+        int sourceWidth = source.getWidth();
+        int sourceHeight = source.getHeight();
+        Toast.makeText(getContext(), "screen size: " + sourceWidth + ", " + sourceHeight, Toast.LENGTH_SHORT).show();
+        int cx = sourceWidth / 2;
+        int cy = sourceHeight / 2;
+        int newWidth = 500;
+        int newHeight = 500;
+        int size = Math.min(newWidth, newHeight);
+        int left = cx - ((size) / 2);
+        int top = cy - ((size) / 2);
+        Toast.makeText(getContext(), "Left: " + left + " Right: " + newWidth + " Top: " + top + "Bottom" + newHeight + " new size: " + size, Toast.LENGTH_SHORT).show();
+        source.setPixel(1560, 2080, Color.RED);
+        Bitmap dest = Bitmap.createBitmap(source, left, top, size, size);
+        return dest;
     }
 
 
@@ -376,8 +419,9 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
     }
 
     public void showGallery() {
-        if (infoCard.getVisibility() == View.GONE)
+        if (infoCard.getVisibility() == View.GONE) {
             infoCard.setVisibility(View.VISIBLE);
+        }
     }
 
     public void hideCharacterInputBox() {
@@ -528,4 +572,86 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback {
             surfaceView.setVisibility(View.GONE);
     }
 
+    public Bitmap removeBack(Bitmap oldBitmap) {
+        int colorToReplace = oldBitmap.getPixel(20, 50);
+
+        int width = oldBitmap.getWidth();
+        int height = oldBitmap.getHeight();
+        int[] pixels = new int[width * height];
+        oldBitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+
+        int rA = Color.alpha(colorToReplace);
+        int rR = Color.red(colorToReplace);
+        int rG = Color.green(colorToReplace);
+        int rB = Color.blue(colorToReplace);
+        int pixel;
+
+        // iteration through pixels
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                // get current index in 2D-matrix
+                int index = y * width + x;
+                //Log.i("Index", "" + index);
+                pixel = pixels[index];
+                int rrA = Color.alpha(pixel);
+                int rrR = Color.red(pixel);
+                int rrG = Color.green(pixel);
+                int rrB = Color.blue(pixel);
+
+                if (rA - COLOR_TOLERANCE < rrA && rrA < rA + COLOR_TOLERANCE && rR - COLOR_TOLERANCE < rrR && rrR < rR + COLOR_TOLERANCE &&
+                        rG - COLOR_TOLERANCE < rrG && rrG < rG + COLOR_TOLERANCE && rB - COLOR_TOLERANCE < rrB && rrB < rB + COLOR_TOLERANCE) {
+                    pixels[index] = Color.TRANSPARENT;
+                }
+            }
+        }
+
+        Bitmap newBitmap = Bitmap.createBitmap(width, height, oldBitmap.getConfig());
+        newBitmap.setPixels(pixels, 0, width, 0, 0, width, height);
+        return newBitmap;
+    }
+
+    public Bitmap polish(Bitmap oldBitmap, int targetColor) {
+        int colorToReplace = oldBitmap.getPixel(20, 50);
+
+        int width = oldBitmap.getWidth();
+        int height = oldBitmap.getHeight();
+        int[] pixels = new int[width * height];
+        oldBitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+
+        int rA = Color.alpha(colorToReplace);
+        int rR = Color.red(colorToReplace);
+        int rG = Color.green(colorToReplace);
+        int rB = Color.blue(colorToReplace);
+        int pixel;
+
+        // iteration through pixels
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                // get current index in 2D-matrix
+                int index = y * width + x;
+                //Log.i("Index", "" + index);
+                pixel = pixels[index];
+                int rrA = Color.alpha(pixel);
+                int rrR = Color.red(pixel);
+                int rrG = Color.green(pixel);
+                int rrB = Color.blue(pixel);
+
+                if (rA - COLOR_TOLERANCE < rrA && rrA < rA + COLOR_TOLERANCE && rR - COLOR_TOLERANCE < rrR && rrR < rR + COLOR_TOLERANCE &&
+                        rG - COLOR_TOLERANCE < rrG && rrG < rG + COLOR_TOLERANCE && rB - COLOR_TOLERANCE < rrB && rrB < rB + COLOR_TOLERANCE) {
+                    pixels[index] = pixels[index];
+                } else
+                    pixels[index] = targetColor;
+            }
+        }
+
+        Bitmap newBitmap = Bitmap.createBitmap(width, height, oldBitmap.getConfig());
+        newBitmap.setPixels(pixels, 0, width, 0, 0, width, height);
+        return newBitmap;
+    }
+
+    @Override
+    public void onClick(View view, int position) {
+        final File file = files.get(position);
+        //NavController navController=
+    }
 }
