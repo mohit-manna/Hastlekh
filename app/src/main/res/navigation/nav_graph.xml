@@ -16,7 +16,7 @@
     </fragment>
     <fragment
         android:id="@+id/charactersFragment"
-        android:name="com.incrementors.handwritingcreator.charactersFragment"
+        android:name="com.incrementors.handwritingcreator.CharactersFragment"
         android:label="fragment_characters"
         tools:layout="@layout/fragment_characters" />
 </navigation>

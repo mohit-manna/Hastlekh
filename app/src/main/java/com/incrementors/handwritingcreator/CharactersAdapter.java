@@ -15,6 +15,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy;
 
 import java.io.File;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class CharactersAdapter extends RecyclerView.Adapter<CharactersAdapter.CharacterViewHolder> {
     List<File> characters;
@@ -36,14 +37,16 @@ public class CharactersAdapter extends RecyclerView.Adapter<CharactersAdapter.Ch
 
     @Override
     public void onBindViewHolder(@NonNull final CharacterViewHolder holder, final int position) {
-        holder.characterName.setText(String.valueOf(characters.get(position).getName().charAt(0)));
+        String[] nm = characters.get(position).getName().split(Pattern.quote("."));
+        //Log.i("character name", Arrays.toString(nm));
+        holder.characterName.setText(String.valueOf((char) Integer.parseInt(nm[0])));
+        //Log.i("character name", String.valueOf((char) Integer.parseInt(nm[0])));
         String path = characters.get(position).getAbsolutePath();
         Glide.with(context)
                 .asBitmap()
                 .load(path)
                 .diskCacheStrategy(DiskCacheStrategy.NONE)
                 .skipMemoryCache(true)
-                .centerCrop()
                 .into(holder.characterImage);
     }
 

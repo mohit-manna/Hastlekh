@@ -27,7 +27,6 @@ import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.TranslateAnimation;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -41,6 +40,7 @@ import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -66,6 +66,67 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
     private Camera camera;
     private CardView infoCard, confirmImageLayout;
     private View view;
+    Camera.PictureCallback pictureCallback_JPG = new Camera.PictureCallback() {
+
+        @Override
+        public void onPictureTaken(final byte[] data, Camera cam) {
+            // TODO Auto-generated method stub
+            confirmImageLayout.setVisibility(View.VISIBLE);
+            cameraControlLayout.setVisibility(View.GONE);
+            saveImage.setOnClickListener(v -> {
+                animateView(v);
+                createFile();
+                File appDir = new File(Environment.getExternalStorageDirectory(), getResources().getString(R.string.app_name));
+                if (appDir.exists()) {
+                    try {
+                        Bitmap bitmapPicture = BitmapFactory.decodeByteArray(data, 0, data.length);
+                        bitmapPicture = rotateImage(bitmapPicture, 90);
+
+                        bitmapPicture = crop(bitmapPicture);
+                        //bitmapPicture = getGrayScale(bitmapPicture);
+                        bitmapPicture = removeBack(bitmapPicture);
+
+                        String imageName = (int) character.getText().toString().trim().charAt(0) + ".webp";
+                        Log.i("image name", String.valueOf((int) character.getText().toString().trim().charAt(0)));
+                        File file = new File(appDir, imageName);
+                        FileOutputStream fos = new FileOutputStream(file);
+
+                        bitmapPicture.compress(Bitmap.CompressFormat.WEBP, 100, fos);
+                        fos.close();
+
+                        //Toast.makeText(getContext(), "Image saved", Toast.LENGTH_LONG).show();
+
+                        Bitmap bitmap = BitmapFactory.decodeFile(appDir + "/" + imageName);
+
+                        SharedPreferences sh = getContext().getSharedPreferences(getResources().getString(R.string.app_name), MODE_PRIVATE);
+                        SharedPreferences.Editor editor = sh.edit();
+                        editor.putString("lastsavedimage", imageName);
+                        editor.commit();
+
+                        capturedImage.setImageBitmap(bitmap);
+
+                    } catch (FileNotFoundException e) {
+                        e.getMessage();
+                    } catch (IOException e) {
+                        e.getMessage();
+                    }
+
+                    camera.startPreview();
+                    confirmImageLayout.setVisibility(View.GONE);
+                    cameraControlLayout.setVisibility(View.VISIBLE);
+                } else {
+                    Toast.makeText(getContext(), "File not found", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            discardImage.setOnClickListener(v -> {
+                animateView(v);
+                camera.startPreview();
+                confirmImageLayout.setVisibility(View.GONE);
+                cameraControlLayout.setVisibility(View.VISIBLE);
+            });
+        }
+    };
     private List<File> files;
     private TextView suggestion;
     private TextInputEditText character;
@@ -78,89 +139,18 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
     private CharactersAdapter charactersAdapter;
     private TextInputLayout characterInpuLayout;
     private LinearLayout cameraControlLayout, controlsLayout, scanner;
-    Camera.PictureCallback pictureCallback_JPG = new Camera.PictureCallback() {
-
-        @Override
-        public void onPictureTaken(final byte[] data, Camera cam) {
-            // TODO Auto-generated method stub
-            confirmImageLayout.setVisibility(View.VISIBLE);
-            cameraControlLayout.setVisibility(View.GONE);
-            saveImage.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    animateView(v);
-                    createFile();
-                    File appDir = new File(Environment.getExternalStorageDirectory(), getResources().getString(R.string.app_name));
-                    if (appDir.exists()) {
-                        try {
-                            Bitmap bitmapPicture = BitmapFactory.decodeByteArray(data, 0, data.length);
-                            bitmapPicture = rotateImage(bitmapPicture, 90);
-
-                            bitmapPicture = crop(bitmapPicture);
-                            //bitmapPicture = getGrayScale(bitmapPicture);
-                            bitmapPicture = removeBack(bitmapPicture);
-
-
-                            String imageName = character.getText().toString().trim() + ".webp";
-                            File file = new File(appDir, imageName);
-                            FileOutputStream fos = new FileOutputStream(file);
-
-                            //fos.write(data);
-
-                            bitmapPicture.compress(Bitmap.CompressFormat.WEBP, 100, fos);
-                            fos.close();
-
-                            //Toast.makeText(getContext(), "Image saved", Toast.LENGTH_LONG).show();
-
-                            Bitmap bitmap = BitmapFactory.decodeFile(appDir + "/" + imageName);
-
-                            SharedPreferences sh = getContext().getSharedPreferences(getResources().getString(R.string.app_name), MODE_PRIVATE);
-                            SharedPreferences.Editor editor = sh.edit();
-                            editor.putString("lastsavedimage", imageName);
-                            editor.commit();
-
-                            capturedImage.setImageBitmap(bitmap);
-
-                        } catch (FileNotFoundException e) {
-                            e.getMessage();
-                        } catch (IOException e) {
-                            e.getMessage();
-                        }
-
-                        camera.startPreview();
-                        confirmImageLayout.setVisibility(View.GONE);
-                        cameraControlLayout.setVisibility(View.VISIBLE);
-                    } else {
-                        Toast.makeText(getContext(), "File not found", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            });
-
-            discardImage.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    animateView(v);
-                    camera.startPreview();
-                    confirmImageLayout.setVisibility(View.GONE);
-                    cameraControlLayout.setVisibility(View.VISIBLE);
-                }
-            });
-        }
-    };
+    private ImageView exit;
     private FrameLayout frame;
     private boolean flash;
     private InputMethodManager imm;
 
-    public CameraFragment() {
-
-    }
-
-    public static Camera getCameraInstance() {
+    public static Camera getCameraInstance(View view) {
         Camera c = null;
         try {
             c = Camera.open(); // attempt to get a Camera instance
         } catch (Exception e) {
             // Camera is not available (in use or does not exist)
+            Toast.makeText(view.getContext(), "Cannot open camera", Toast.LENGTH_SHORT).show();
         }
         return c; // returns null if camera is unavailable
     }
@@ -204,6 +194,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        getActivity().getWindow().setStatusBarColor(getResources().getColor(R.color.colorBlack));
         this.view = view;
         init(view);
         if (hasCameraHardware(view.getContext())) {
@@ -230,7 +221,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
                 Toast.makeText(view.getContext(), "Camera Permission Granted", Toast.LENGTH_SHORT).show();
                 createSurface();
             } else {
-                //Toast.makeText(this, " naa naa naa Camera Permission Denied", Toast.LENGTH_LONG).show();
+                //Toast.makeText(this, " naa naa Camera Permission Denied", Toast.LENGTH_LONG).show();
                 getActivity().finish();
             }
         }
@@ -238,6 +229,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
 
     private void init(View view) {
         imm = (InputMethodManager) getContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
+        exit = view.findViewById(R.id.exit);
         infoCard = view.findViewById(R.id.alert_card);
         character = view.findViewById(R.id.character);
         surfaceView = view.findViewById(R.id.surface);
@@ -282,97 +274,74 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
             }
         });
 
-        cameraControlLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                character.clearFocus();
-            }
+        exit.setOnClickListener(v -> {
+            Navigation.findNavController(view).navigate(R.id.action_cemeraFragment_to_charactersFragment);
         });
 
-        controlsLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                character.clearFocus();
-            }
-        });
+        cameraControlLayout.setOnClickListener(v -> character.clearFocus());
 
-        surfaceView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                character.clearFocus();
-                hideGallery();
-                showCharacterInputBox();
-            }
+        controlsLayout.setOnClickListener(v -> character.clearFocus());
+
+        surfaceView.setOnClickListener(v -> {
+            character.clearFocus();
+            hideGallery();
+            showCharacterInputBox();
         });
 
         createSurface();
 
-        captureButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                animateView(v);
+        captureButton.setOnClickListener(v -> {
+            animateView(v);
+            hideGallery();
+            showCharacterInputBox();
+
+            if (character.getText().toString().trim().isEmpty()) {
+                //Toast.makeText(getContext(), "Please enter character to map the image", Toast.LENGTH_LONG).show();
+                character.setBackground(getResources().getDrawable(R.drawable.emptybox));
+            } else {
+                camera.takePicture(null, null, pictureCallback_JPG);
+            }
+        });
+
+        flasbtn.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
                 hideGallery();
                 showCharacterInputBox();
-
-                if (character.getText().toString().trim().isEmpty()) {
-                    //Toast.makeText(getContext(), "Please enter character to map the image", Toast.LENGTH_LONG).show();
-                    character.setBackground(getResources().getDrawable(R.drawable.emptybox));
-                } else {
-                    camera.takePicture(null, null, pictureCallback_JPG);
+                Toast.makeText(getContext(), "Checked", Toast.LENGTH_SHORT).show();
+                flash = true;
+                try {
+                    updateCamera(surfaceHolder);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-            }
-        });
-
-        flasbtn.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) {
-                    hideGallery();
-                    showCharacterInputBox();
-                    Toast.makeText(getContext(), "Checked", Toast.LENGTH_SHORT).show();
-                    flash = true;
-                    try {
-                        updateCamera(surfaceHolder);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    hideGallery();
-                    showCharacterInputBox();
-                    flash = false;
-                    try {
-                        updateCamera(surfaceHolder);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    Toast.makeText(getContext(), "Not Checked", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-
-        character.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (hasFocus) {
-                    characterInpuLayout.setErrorEnabled(false);
-                } else {
-                    imm.hideSoftInputFromWindow(character.getWindowToken(), 0);
-                    character.setBackground(getResources().getDrawable(R.drawable.characterbox));
-                }
-            }
-        });
-
-        cameraControlLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+            } else {
                 hideGallery();
                 showCharacterInputBox();
+                flash = false;
+                try {
+                    updateCamera(surfaceHolder);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                Toast.makeText(getContext(), "Not Checked", Toast.LENGTH_SHORT).show();
             }
+        });
+
+        character.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                characterInpuLayout.setErrorEnabled(false);
+            } else {
+                imm.hideSoftInputFromWindow(character.getWindowToken(), 0);
+                character.setBackground(getResources().getDrawable(R.drawable.characterbox));
+            }
+        });
+
+        cameraControlLayout.setOnClickListener(v -> {
+            hideGallery();
+            showCharacterInputBox();
         });
     }
 
-    //I added this method because people keep asking how
-    //to calculate the dimensions of the bitmap...see comments below
     public int getSquareCropDimensionForBitmap(Bitmap bitmap) {
         //use the smallest dimension of the image to crop to
         return Math.min(bitmap.getWidth() / 4, bitmap.getHeight() / 4);
@@ -401,8 +370,8 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
         Toast.makeText(getContext(), "screen size: " + sourceWidth + ", " + sourceHeight, Toast.LENGTH_SHORT).show();
         int cx = sourceWidth / 2;
         int cy = sourceHeight / 2;
-        int newWidth = 500;
-        int newHeight = 500;
+        int newWidth = 300;
+        int newHeight = 300;
         int size = Math.min(newWidth, newHeight);
         int left = cx - ((size) / 2);
         int top = cy - ((size) / 2);
@@ -459,7 +428,6 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
             updateCamera(holder);
         } catch (IOException e) {
             Log.d(String.valueOf(getActivity()), "Error starting camera preview on surfaceCreated: " + e.getMessage());
-            //e.printStackTrace();
         }
     }
 
@@ -489,7 +457,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
     }
 
     public void updateCamera(SurfaceHolder holder) throws IOException {
-        camera = getCameraInstance();
+        camera = getCameraInstance(view);
         camera.stopPreview();
         mParameters = camera.getParameters();
         setParameter(mParameters, flash);
@@ -555,6 +523,7 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
             surfaceView.setVisibility(View.VISIBLE);
     }
 
+    //creating font file
     public void createFile() {
         File newdir = new File(Environment.getExternalStorageDirectory(), getResources().getString(R.string.app_name));
         if (!newdir.exists())
@@ -610,44 +579,44 @@ public class CameraFragment extends Fragment implements SurfaceHolder.Callback, 
         return newBitmap;
     }
 
-    public Bitmap polish(Bitmap oldBitmap, int targetColor) {
-        int colorToReplace = oldBitmap.getPixel(20, 50);
-
-        int width = oldBitmap.getWidth();
-        int height = oldBitmap.getHeight();
-        int[] pixels = new int[width * height];
-        oldBitmap.getPixels(pixels, 0, width, 0, 0, width, height);
-
-        int rA = Color.alpha(colorToReplace);
-        int rR = Color.red(colorToReplace);
-        int rG = Color.green(colorToReplace);
-        int rB = Color.blue(colorToReplace);
-        int pixel;
-
-        // iteration through pixels
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                // get current index in 2D-matrix
-                int index = y * width + x;
-                //Log.i("Index", "" + index);
-                pixel = pixels[index];
-                int rrA = Color.alpha(pixel);
-                int rrR = Color.red(pixel);
-                int rrG = Color.green(pixel);
-                int rrB = Color.blue(pixel);
-
-                if (rA - COLOR_TOLERANCE < rrA && rrA < rA + COLOR_TOLERANCE && rR - COLOR_TOLERANCE < rrR && rrR < rR + COLOR_TOLERANCE &&
-                        rG - COLOR_TOLERANCE < rrG && rrG < rG + COLOR_TOLERANCE && rB - COLOR_TOLERANCE < rrB && rrB < rB + COLOR_TOLERANCE) {
-                    pixels[index] = pixels[index];
-                } else
-                    pixels[index] = targetColor;
-            }
-        }
-
-        Bitmap newBitmap = Bitmap.createBitmap(width, height, oldBitmap.getConfig());
-        newBitmap.setPixels(pixels, 0, width, 0, 0, width, height);
-        return newBitmap;
-    }
+//    public Bitmap polish(Bitmap oldBitmap, int targetColor) {
+//        int colorToReplace = oldBitmap.getPixel(20, 50);
+//
+//        int width = oldBitmap.getWidth();
+//        int height = oldBitmap.getHeight();
+//        int[] pixels = new int[width * height];
+//        oldBitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+//
+//        int rA = Color.alpha(colorToReplace);
+//        int rR = Color.red(colorToReplace);
+//        int rG = Color.green(colorToReplace);
+//        int rB = Color.blue(colorToReplace);
+//        int pixel;
+//
+//        // iteration through pixels
+//        for (int y = 0; y < height; ++y) {
+//            for (int x = 0; x < width; ++x) {
+//                // get current index in 2D-matrix
+//                int index = y * width + x;
+//                //Log.i("Index", "" + index);
+//                pixel = pixels[index];
+//                int rrA = Color.alpha(pixel);
+//                int rrR = Color.red(pixel);
+//                int rrG = Color.green(pixel);
+//                int rrB = Color.blue(pixel);
+//
+//                if (rA - COLOR_TOLERANCE < rrA && rrA < rA + COLOR_TOLERANCE && rR - COLOR_TOLERANCE < rrR && rrR < rR + COLOR_TOLERANCE &&
+//                        rG - COLOR_TOLERANCE < rrG && rrG < rG + COLOR_TOLERANCE && rB - COLOR_TOLERANCE < rrB && rrB < rB + COLOR_TOLERANCE) {
+//                    pixels[index] = pixels[index];
+//                } else
+//                    pixels[index] = targetColor;
+//            }
+//        }
+//
+//        Bitmap newBitmap = Bitmap.createBitmap(width, height, oldBitmap.getConfig());
+//        newBitmap.setPixels(pixels, 0, width, 0, 0, width, height);
+//        return newBitmap;
+//    }
 
     @Override
     public void onClick(View view, int position) {
