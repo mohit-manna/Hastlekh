@@ -12,5 +12,5 @@
     <string name="character">A</string>
     <string name="characterimage">characterImage</string>
     <string name="savenote">saveNote</string>
-    <string name="type_your_notes_here">noteHint</string>
+    <string name="noteHint">Type your notes here</string>
 </resources>
